@@ -1,0 +1,112 @@
+# =====================================================
+# RMS BACKEND - .gitignore
+# =====================================================
+
+# Dépendances
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Environnement
+.env
+.env.local
+.env.production
+.env.development
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Base de données
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+
+# Uploads
+uploads/
+uploads/proofs/
+uploads/proofs/images/
+uploads/proofs/videos/
+uploads/avatars/
+uploads/temp/
+
+# Fichiers de configuration IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Fichiers OS
+Thumbs.db
+.DS_Store
+.directory
+desktop.ini
+
+# Fichiers de test
+coverage/
+.nyc_output/
+*.test.js
+*.spec.js
+
+# Fichiers de build
+dist/
+build/
+out/
+*.tgz
+
+# Fichiers temporaires
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Clés et certificats
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Docker
+docker-compose.override.yml
+Dockerfile
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab/
+.ci/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Scripts sensibles
+scripts/*.secret.js
+scripts/*.key.js
+
+# Fichiers de sauvegarde
+*.bak
+*.backup
+*.old
+
+# Secrets
+.secrets/
+secrets/
+*.secret.*

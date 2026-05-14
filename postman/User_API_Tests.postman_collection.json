@@ -1,0 +1,751 @@
+{
+  "info": {
+    "name": "RMS User API Tests",
+    "_postman_id": "bdf5746b-7cde-469d-8f9c-5f6e01f3b15a",
+    "description": "Postman collection for testing the RMS user actor API: signup, login, profile, organizations, reclamations, tracking, messages, password change, and logout.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('baseUrl')) {",
+          "  pm.collectionVariables.set('baseUrl', 'http://localhost:5000/api');",
+          "}",
+          "if (!pm.collectionVariables.get('userEmail')) {",
+          "  pm.collectionVariables.set('userEmail', `user_${Date.now()}@example.com`);",
+          "}",
+          "if (!pm.collectionVariables.get('userPassword')) {",
+          "  pm.collectionVariables.set('userPassword', 'User@123');",
+          "}",
+          "if (!pm.collectionVariables.get('userCin')) {",
+          "  pm.collectionVariables.set('userCin', String(Date.now()).slice(-8));",
+          "}",
+          "if (!pm.collectionVariables.get('organizationId')) {",
+          "  pm.collectionVariables.set('organizationId', '1');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "userEmail",
+      "value": ""
+    },
+    {
+      "key": "userPassword",
+      "value": "User@123"
+    },
+    {
+      "key": "userCin",
+      "value": ""
+    },
+    {
+      "key": "organizationId",
+      "value": "1"
+    },
+    {
+      "key": "reclamationId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Signup User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Signup returns 201 or 409 if already exists', function () {",
+              "  pm.expect([201, 409]).to.include(pm.response.code);",
+              "});",
+              "const json = pm.response.json();",
+              "if (pm.response.code === 201 && json.data && json.data.token) {",
+              "  pm.collectionVariables.set('token', json.data.token);",
+              "}",
+              "if (pm.response.code === 201 && json.data && json.data.user && json.data.user.email) {",
+              "  pm.collectionVariables.set('userEmail', json.data.user.email);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\",\n  \"confirm_password\": \"{{userPassword}}\",\n  \"first_name\": \"Postman\",\n  \"last_name\": \"User\",\n  \"phone\": \"50123456\",\n  \"cin\": \"{{userCin}}\",\n  \"address\": \"Rue de test, Tunis\",\n  \"governorate\": \"Tunis\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "register"
+          ]
+        }
+      }
+    },
+    {
+      "name": "02 - Login User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Response contains token', function () {",
+              "  pm.expect(json.data.token).to.be.a('string');",
+              "});",
+              "pm.collectionVariables.set('token', json.data.token);",
+              "pm.collectionVariables.set('userEmail', json.data.user.email);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      }
+    },
+    {
+      "name": "03 - Get User Profile",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Profile success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Profile is user role data', function () {",
+              "  pm.expect(json.success).to.eql(true);",
+              "  pm.expect(json.data.email).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/user/profile",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "user",
+            "profile"
+          ]
+        }
+      }
+    },
+    {
+      "name": "04 - Update User Profile",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Profile update success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Phone updated', function () {",
+              "  pm.expect(json.data.phone).to.eql('50999999');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"first_name\": \"Postman\",\n  \"last_name\": \"Tester\",\n  \"phone\": \"50999999\",\n  \"address\": \"Updated test address, Tunis\",\n  \"governorate\": \"Tunis\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/user/profile",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "user",
+            "profile"
+          ]
+        }
+      }
+    },
+    {
+      "name": "05 - Get Available Organizations",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Organizations success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Organizations returned', function () {",
+              "  pm.expect(json.data.organizations).to.be.an('array');",
+              "});",
+              "if (json.data.organizations.length > 0) {",
+              "  pm.collectionVariables.set('organizationId', String(json.data.organizations[0].id));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/user/organizations?governorate=Tunis",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "user",
+            "organizations"
+          ],
+          "query": [
+            {
+              "key": "governorate",
+              "value": "Tunis"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "06 - Create Reclamation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Reclamation created', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Response contains reclamation id', function () {",
+              "  pm.expect(json.data.id).to.exist;",
+              "});",
+              "pm.collectionVariables.set('reclamationId', String(json.data.id));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Postman test reclamation\",\n  \"description\": \"This reclamation was created from a Postman automated test.\",\n  \"type\": \"electrique\",\n  \"urgency\": \"normal\",\n  \"organization_ids\": [{{organizationId}}],\n  \"amount\": 0,\n  \"location_lat\": 36.8065,\n  \"location_lng\": 10.1815\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/user/reclamations",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "user",
+            "reclamations"
+          ]
+        }
+      }
+    },
+    {
+      "name": "07 - List My Reclamations",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('List success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Reclamations array exists', function () {",
+              "  pm.expect(json.data.reclamations).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/user/reclamations?page=1&limit=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "user",
+            "reclamations"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "08 - Get Reclamation Detail",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Detail success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Detail matches variable id', function () {",
+              "  pm.expect(String(json.data.id)).to.eql(pm.collectionVariables.get('reclamationId'));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/user/reclamations/{{reclamationId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "user",
+            "reclamations",
+            "{{reclamationId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "09 - Track Reclamation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Tracking success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Timeline exists', function () {",
+              "  pm.expect(json.data.timeline).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/user/reclamations/{{reclamationId}}/tracking",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "user",
+            "reclamations",
+            "{{reclamationId}}",
+            "tracking"
+          ]
+        }
+      }
+    },
+    {
+      "name": "10 - Send Reclamation Message",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Message sent', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Message id exists', function () {",
+              "  pm.expect(json.data.id).to.exist;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"message\": \"Hello, this is a Postman test message for my reclamation.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/user/reclamations/{{reclamationId}}/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "user",
+            "reclamations",
+            "{{reclamationId}}",
+            "messages"
+          ]
+        }
+      }
+    },
+    {
+      "name": "11 - Get Reclamation Messages",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Messages success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Messages array exists', function () {",
+              "  pm.expect(json.data.messages).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/user/reclamations/{{reclamationId}}/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "user",
+            "reclamations",
+            "{{reclamationId}}",
+            "messages"
+          ]
+        }
+      }
+    },
+    {
+      "name": "12 - Cancel Pending Reclamation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Cancel succeeds if reclamation is still pending', function () {",
+              "  pm.expect([200, 400]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 400) {",
+              "  console.log('Cancel can fail if the reclamation is no longer pending.');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Cancelled from Postman test.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/user/reclamations/{{reclamationId}}/cancel",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "user",
+            "reclamations",
+            "{{reclamationId}}",
+            "cancel"
+          ]
+        }
+      }
+    },
+    {
+      "name": "13 - Change Password",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Password change success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.collectionVariables.set('userPassword', 'User@1234');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"current_password\": \"{{userPassword}}\",\n  \"new_password\": \"User@1234\",\n  \"confirm_password\": \"User@1234\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/change-password",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "change-password"
+          ]
+        }
+      }
+    },
+    {
+      "name": "14 - Logout",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Logout success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/auth/logout",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "logout"
+          ]
+        }
+      }
+    }
+  ]
+}
