@@ -1,0 +1,888 @@
+{
+  "info": {
+    "name": "RMS Admin API Tests",
+    "_postman_id": "f1d91b6c-8b13-4cc0-9dbb-513f6b2d8a11",
+    "description": "Postman collection for testing RMS admin APIs: login, organizations with logo field, responsables, admins, dashboard, and admin-wide read endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{adminToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('baseUrl')) pm.collectionVariables.set('baseUrl', 'http://localhost:5000/api');",
+          "if (!pm.collectionVariables.get('adminEmail')) pm.collectionVariables.set('adminEmail', 'admin@rms.com');",
+          "if (!pm.collectionVariables.get('adminPassword')) pm.collectionVariables.set('adminPassword', 'Admin@123');",
+          "if (!pm.collectionVariables.get('organizationLogo')) pm.collectionVariables.set('organizationLogo', 'https://placehold.co/240x120/png?text=RMS+Org');",
+          "const suffix = Date.now();",
+          "if (!pm.collectionVariables.get('responsableEmail')) pm.collectionVariables.set('responsableEmail', `responsable_${suffix}@postman.test`);",
+          "if (!pm.collectionVariables.get('responsablePassword')) pm.collectionVariables.set('responsablePassword', 'Resp@123');",
+          "if (!pm.collectionVariables.get('responsableCin')) pm.collectionVariables.set('responsableCin', String(suffix).slice(-8));",
+          "if (!pm.collectionVariables.get('createdAdminEmail')) pm.collectionVariables.set('createdAdminEmail', `admin_${suffix}@postman.test`);",
+          "if (!pm.collectionVariables.get('createdAdminPassword')) pm.collectionVariables.set('createdAdminPassword', 'Admin@123');",
+          "if (!pm.collectionVariables.get('createdAdminCin')) pm.collectionVariables.set('createdAdminCin', String(suffix + 11).slice(-8));"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api"
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@rms.com"
+    },
+    {
+      "key": "adminPassword",
+      "value": "Admin@123"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "organizationId",
+      "value": ""
+    },
+    {
+      "key": "organizationLogo",
+      "value": "https://placehold.co/240x120/png?text=RMS+Org"
+    },
+    {
+      "key": "responsableEmail",
+      "value": ""
+    },
+    {
+      "key": "responsablePassword",
+      "value": "Resp@123"
+    },
+    {
+      "key": "responsableCin",
+      "value": ""
+    },
+    {
+      "key": "responsableId",
+      "value": ""
+    },
+    {
+      "key": "createdAdminEmail",
+      "value": ""
+    },
+    {
+      "key": "createdAdminPassword",
+      "value": "Admin@123"
+    },
+    {
+      "key": "createdAdminCin",
+      "value": ""
+    },
+    {
+      "key": "createdAdminId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Login Admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Admin login success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Token exists and role is admin', function () {",
+              "  pm.expect(json.data.token).to.be.a('string');",
+              "  pm.expect(json.data.user.role).to.eql('admin');",
+              "});",
+              "pm.collectionVariables.set('adminToken', json.data.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      }
+    },
+    {
+      "name": "02 - Create Organization With Logo",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Organization created', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Organization id exists', function () {",
+              "  pm.expect(json.data.id).to.exist;",
+              "});",
+              "pm.collectionVariables.set('organizationId', String(json.data.id));",
+              "console.log('Logo is stored as text field. Use get organization by id to verify:', pm.collectionVariables.get('organizationLogo'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Postman Logo Organization\",\n  \"type\": \"private\",\n  \"description\": \"Organization created from Postman admin API test. Logo is stored as a string URL/path.\",\n  \"logo\": \"{{organizationLogo}}\",\n  \"governorate\": \"Tunis\",\n  \"delegation\": \"Tunis Centre\",\n  \"postal_code\": \"1000\",\n  \"address\": \"Rue Postman, Tunis\",\n  \"phone\": \"71123456\",\n  \"email\": \"contact.postman.org@test.tn\",\n  \"website\": \"https://postman-test-org.example.com\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/admin/organizations",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "organizations"
+          ]
+        }
+      }
+    },
+    {
+      "name": "03 - List Organizations",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Organizations list success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Organizations array exists', function () {",
+              "  pm.expect(json.data.organizations).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/admin/organizations?page=1&limit=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "organizations"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "04 - Get Organization By Id And Verify Logo",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Organization detail success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Organization has logo field', function () {",
+              "  pm.expect(json.data).to.have.property('logo');",
+              "});",
+              "pm.test('Logo value matches test URL/path', function () {",
+              "  pm.expect(json.data.logo).to.eql(pm.collectionVariables.get('organizationLogo'));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/admin/organizations/{{organizationId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "organizations",
+            "{{organizationId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "05 - Update Organization Logo",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Organization update success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Updated logo is returned', function () {",
+              "  pm.expect(json.data.logo).to.eql('https://placehold.co/240x120/png?text=Updated+Logo');",
+              "});",
+              "pm.collectionVariables.set('organizationLogo', 'https://placehold.co/240x120/png?text=Updated+Logo');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Postman Logo Organization Updated\",\n  \"logo\": \"https://placehold.co/240x120/png?text=Updated+Logo\",\n  \"phone\": \"71999999\",\n  \"is_active\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/admin/organizations/{{organizationId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "organizations",
+            "{{organizationId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "06 - Create Responsable For Created Organization",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Responsable created', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Responsable id exists', function () {",
+              "  pm.expect(json.data.id).to.exist;",
+              "});",
+              "pm.collectionVariables.set('responsableId', String(json.data.id));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{responsableEmail}}\",\n  \"password\": \"{{responsablePassword}}\",\n  \"first_name\": \"Admin\",\n  \"last_name\": \"ResponsableTest\",\n  \"phone\": \"98123456\",\n  \"cin\": \"{{responsableCin}}\",\n  \"organization_id\": {{organizationId}},\n  \"position\": \"Responsable Postman\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/admin/responsables",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "responsables"
+          ]
+        }
+      }
+    },
+    {
+      "name": "07 - List Responsables",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Responsables list success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Responsables array exists', function () {",
+              "  pm.expect(json.data.responsables).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/admin/responsables?page=1&limit=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "responsables"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "08 - Update Responsable",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Responsable update success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"98999999\",\n  \"position\": \"Responsable Postman Updated\",\n  \"is_active\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/admin/responsables/{{responsableId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "responsables",
+            "{{responsableId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "09 - Create Admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Admin created', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Created admin id exists', function () {",
+              "  pm.expect(json.data.id).to.exist;",
+              "});",
+              "pm.collectionVariables.set('createdAdminId', String(json.data.id));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{createdAdminEmail}}\",\n  \"password\": \"{{createdAdminPassword}}\",\n  \"first_name\": \"Postman\",\n  \"last_name\": \"Admin\",\n  \"phone\": \"70111111\",\n  \"cin\": \"{{createdAdminCin}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/admin/admins",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "admins"
+          ]
+        }
+      }
+    },
+    {
+      "name": "10 - List Admins",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Admins list success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Admins array exists', function () {",
+              "  pm.expect(json.data.admins).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/admin/admins",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "admins"
+          ]
+        }
+      }
+    },
+    {
+      "name": "11 - Update Created Admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Admin update success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"70999999\",\n  \"is_active\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/admin/admins/{{createdAdminId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "admins",
+            "{{createdAdminId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "12 - Admin Dashboard",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Dashboard success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Global stats exist', function () {",
+              "  pm.expect(json.data.global_stats).to.be.an('object');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/admin",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "admin"
+          ]
+        }
+      }
+    },
+    {
+      "name": "13 - Global Stats",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Stats request success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/stats",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "stats"
+          ]
+        }
+      }
+    },
+    {
+      "name": "14 - List All Reclamations",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Reclamations list success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/reclamations?page=1&limit=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "reclamations"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "15 - List All Tasks",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Tasks list success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/tasks?page=1&limit=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "tasks"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "16 - List Payment Distributions",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Payment distributions list success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/payments/distributions?page=1&limit=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "payments",
+            "distributions"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "17 - List Proofs",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Proofs list success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/proofs?page=1&limit=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "proofs"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "18 - List Messages",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Messages list success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/messages?page=1&limit=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "messages"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "19 - Delete Created Admin - Optional Cleanup",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Created admin deleted', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/admin/admins/{{createdAdminId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "admins",
+            "{{createdAdminId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "20 - Delete Created Organization - Optional Cleanup",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Organization deleted', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "console.log('Deleting the organization also cascades related responsables/employers/reclamation links if present.');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/admin/organizations/{{organizationId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "organizations",
+            "{{organizationId}}"
+          ]
+        }
+      }
+    }
+  ]
+}
